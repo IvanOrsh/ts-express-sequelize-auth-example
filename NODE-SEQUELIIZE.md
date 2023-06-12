@@ -233,7 +233,7 @@ export const test = {
 };
 ```
 
-# 8. Creating JWT utils
+# 8. Creating JWT Utils with Tests
 
 src/utils/jwt-utils.ts:
 
@@ -321,4 +321,86 @@ describe('Testing JWT utilities', () => {
 });
 ```
 
-#
+# 9. Creating Password Utils
+
+src/utils/password-utils.ts:
+
+```ts
+import { hash, compare } from 'bcrypt';
+
+import { environment } from '../config/environment';
+
+export async function hashPassword(password: string): Promise<string> {
+  return hash(password, environment.saltRounds);
+}
+
+export async function comparePasswords(
+  password: string,
+  hashedPassword: string
+): Promise<boolean> {
+  return compare(password, hashedPassword);
+}
+```
+
+# 10. Abstracting Database Connection
+
+- This is our database connection abstraction.
+
+src/database.index.ts:
+
+```ts
+import { Sequelize } from 'sequelize-typescript';
+
+import { dbType } from '../config/database';
+
+export class Database {
+  isTestEnvironment: boolean;
+  connection: Sequelize | null = null;
+
+  constructor(public readonly environment: string, public readonly db: dbType) {
+    this.isTestEnvironment = this.environment === 'test';
+  }
+
+  getConnectionString() {
+    const { username, password, host, port, database } =
+      this.db[this.environment as keyof dbType];
+
+    return `postgres://${username}:${password}@${host}:${port}/${database};`;
+  }
+
+  async connect() {
+    const uri = this.getConnectionString();
+
+    this.connection = new Sequelize(uri, {
+      logging: this.isTestEnvironment ? false : console.log,
+    });
+
+    // check if we connected successfully
+    await this.connection.authenticate({ logging: false });
+
+    if (!this.isTestEnvironment) {
+      console.log('Connection has been established successfully');
+    }
+
+    // register the models
+
+    // sync the models
+    await this.sync();
+  }
+
+  async sync() {
+    await this.connection?.sync({
+      force: this.isTestEnvironment,
+      logging: false,
+    });
+
+    if (!this.isTestEnvironment) {
+      console.log('Models synchronized successfully');
+    }
+  }
+
+  async disconnect() {
+    await this.connection?.close();
+  }
+}
+```

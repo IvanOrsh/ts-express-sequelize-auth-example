@@ -1,4 +1,13 @@
-export const development = {
+export type DBConfigType = {
+  username: string;
+  password: string;
+  host: string;
+  port: number;
+  database: string;
+  dialect: string;
+};
+
+const development: DBConfigType = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   host: process.env.DB_HOST || 'localhost',
@@ -7,7 +16,7 @@ export const development = {
   dialect: 'postgres',
 };
 
-export const test = {
+const test: DBConfigType = {
   username: process.env.DB_TEST_USERNAME || 'postgres',
   password: process.env.DB_TEST_PASSWORD || 'postgres',
   host: process.env.DB_TEST_HOST || 'localhost',
@@ -15,3 +24,7 @@ export const test = {
   database: process.env.DB_TEST_DATABASE || 'postgres',
   dialect: 'postgres',
 };
+
+export type dbType = typeof db;
+
+export const db = { development, test };

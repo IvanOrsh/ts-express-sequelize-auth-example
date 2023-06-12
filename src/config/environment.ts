@@ -1,7 +1,15 @@
 // import { randomBytes } from 'node:crypto';
 // randomBytes(64).toString('hex');
 
-export const environment = {
+export type EnvironmentType = {
+  port: number;
+  nodeEnv: string;
+  saltRounds: number;
+  jwtAccessTokenSecret: string;
+  jwtRefreshTokenSecret: string;
+};
+
+export const environment: EnvironmentType = {
   port: parseInt(process.env.PORT || '8080'),
   nodeEnv: process.env.NODE_ENV || 'production',
   saltRounds: parseInt(process.env.SALT_ROUNDS || '10'),
