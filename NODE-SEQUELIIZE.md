@@ -99,3 +99,44 @@ tsconfig:
   }
 }
 ```
+
+# 4. Using `docker compose` to Create Databases
+
+- one for development
+- one for testing
+
+create `.env`, `.env.test` files (for example):
+
+```.env
+DB_PASSWORD=postgres
+DB_PORT=5432
+```
+
+create `docker-compose.yaml`:
+
+```yaml
+version: '3'
+services:
+  postgres:
+    image: postgres:13
+    container_name: node-ts-sequelize-auth-example-db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - ${DB_PORT:-5432}:5432
+  postgres-test:
+    image: postgres:13
+    container_name: node-ts-sequelize-auth-example-test-db
+    env_file:
+      - .env.test
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - ${DB_PORT:-5433}:5432
+```
+
+- `docker compose up -d`
+
+- to enter the container: `docker exec -it node-ts-sequelize-auth-example-db bash`
