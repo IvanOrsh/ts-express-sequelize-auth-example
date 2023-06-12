@@ -137,6 +137,98 @@ services:
       - ${DB_PORT:-5433}:5432
 ```
 
-- `docker compose up -d`
+- `docker-compose up -d`
 
 - to enter the container: `docker exec -it node-ts-sequelize-auth-example-db bash`
+
+Or we can connect to our DBs using DBeaver.
+
+# 5. Understanding JWT
+
+- JSON Web Tokens (JWTs) are an **open standard (RFC 7519) for securely transmitting information between parties as a JSON object**.
+- They are **commonly used for authentication and authorization** purposes in web applications and APIs.
+- A JWT consists of three parts: a header, a payload, and a signature, separated by periods.
+
+**Header**:
+
+- The header typically consists of two parts: the token type, which is JWT, and the signing algorithm used to secure the token (e.g., HMAC, RSA, etc.).
+
+**Payload**:
+
+- The payload contains the **claims** or **statements** about the user and additional data.
+- Claims can be divided into three types: registered, public, and private.
+- **Registered claims** include standardized claims like "iss" (issuer), "sub" (subject), "exp" (expiration time), and more.
+- **Public claims are defined by the users, while private claims are used to share information between parties**.
+
+**Signature**:
+
+- The signature is created by taking the encoded header, encoded payload, a secret key (known only to the server), and applying the specified signing algorithm. The signature ensures the integrity of the token and verifies that it hasn't been tampered with.
+
+- When a user logs in or authenticates, the server generates a JWT and sends it back to the client. The client then includes the JWT in subsequent requests, typically in the **Authorization header using the Bearer scheme**. The server receives the JWT, validates its integrity by recalculating the signature, and checks the claims to ensure the token is not expired, not revoked, and authorized to access the requested resources.
+
+- **JWTs are stateless**, meaning the server does not need to store any session information. All the necessary information is contained within the token itself. This allows for horizontal scaling and makes it easier to implement stateless authentication mechanisms.
+
+- The security of JWTs depends on the implementation and various factors such as the choice of signing algorithm, key management practices, token lifetime, and handling of sensitive data. When used correctly, JWTs can provide a secure means of authentication. However, it's important to follow best practices, such as using strong cryptographic algorithms, securely storing and managing keys, and carefully validating and verifying the tokens.
+
+- It's worth noting that JWTs are not inherently secure. Mishandling or insecure implementation can lead to security vulnerabilities, such as token leakage, token tampering, or replay attacks. Therefore, it's crucial to understand and follow best practices to ensure the security of your JWT-based authentication system.
+
+# 6. Understanding Bcrypt
+
+**Hashing**:
+
+- A hash function is a mathematical function that takes an input (in this case, a password or any data) and produces a fixed-size string of characters, which is the hash value or hash code.
+- The hash function is designed to be computationally efficient and irreversible, meaning it should be difficult to derive the original input from the hash value.
+- In server authentication, passwords are typically hashed and stored in a database instead of storing the actual passwords in plain text.When a user attempts to authenticate, their provided password is hashed and compared to the stored hashed value. If the hashes match, the password is considered correct.
+
+**Salt**:
+
+- A salt is a random value appended to the password before hashing. The purpose of a salt is to **add uniqueness and complexity** to the hashed password.
+- Each user's password can have a different salt, ensuring that even if two users have the same password, their hashed values will be different.
+- Salting helps protect against precomputed attacks (rainbow table attacks) where an attacker could use precomputed hash values for commonly used passwords. By using a unique salt for each user, the attacker would need to generate and store a separate set of precomputed hashes for each salt, which significantly increases the complexity of the attack.
+
+**bcrypt**:
+
+- bcrypt is a widely used algorithm for hashing passwords.
+- It incorporates both hashing and salting techniques, making it a secure choice for password storage.
+- bcrypt uses a variant of the Blowfish encryption algorithm and introduces a work factor or cost factor, which determines the computational complexity of the hashing process. Increasing the work factor makes the hashing process slower, which helps protect against brute-force attacks. bcrypt automatically handles the generation and management of salts, making it convenient for developers to use without worrying about the details of salt generation and storage.
+
+# 7. Adding Environment Variables
+
+1. modify scripts - something like `"local": "NODE_ENV=development ts-node src",`
+2. src/config/environment.ts:
+
+```ts
+export const environment = {
+  port: parseInt(process.env.PORT || '8080'),
+  nodeEnv: process.env.NODE_ENV || 'production',
+  setRounds: parseInt(process.env.SALT_ROUNDS || '10'),
+  jwtAccessTokenSecret:
+    process.env.JWT_ACCESS_TOKEN_SECRET ||
+    '5e54e559f6d5a35bff35b38f3bda80c10da44275e0771e4d1aa9db23847fa9868f22f5870734c919c1b7e47f713d4bd318281ec6e802ba05d5ebdafeeb9950d3',
+  jwtRefreshTokenSecret:
+    process.env.JWT_REFRESH_TOKEN_SECRET ||
+    'e5566a942d41336955fb0a0ec3c88f49c6ece0ec674eee762d934c2d0d1f306392a44524c66b2541f7ebd219fe716a912c1d0896a6669f455e277064ec3c26d7',
+};
+```
+
+3. database.ts:
+
+```ts
+export const development = {
+  username: process.env.DB_USERNAME || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  database: process.env.DB_DATABASE || 'postgres',
+  dialect: 'postgres',
+};
+
+export const test = {
+  username: process.env.DB_TEST_USERNAME || 'postgres',
+  password: process.env.DB_TEST_PASSWORD || 'postgres',
+  host: process.env.DB_TEST_HOST || 'localhost',
+  port: parseInt(process.env.DB_TEST_PORT || '5433'),
+  database: process.env.DB_TEST_DATABASE || 'postgres',
+  dialect: 'postgres',
+};
+```
