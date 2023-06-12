@@ -82,3 +82,20 @@ module.exports = {
 ```
 
 `test": "jest --runInBand",` - can be useful for debugging
+
+# 3. Installing Dependencies:
+
+`npm i express dotenv morgan bcrypt jsonwebtoken sequelize sequelize-typescript pg pg-hstore cls-hooked`
+
+`npm i -D @types/morgan @types/pg @types/cls-hooked @types/bcrypt @types/validator` ...more types if needed
+
+tsconfig:
+
+```json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true /* Enable experimental support for TC39 stage 2 draft decorators. */,
+    "emitDecoratorMetadata": true /* Emit design-type metadata for decorated declarations in source files. */
+  }
+}
+```
