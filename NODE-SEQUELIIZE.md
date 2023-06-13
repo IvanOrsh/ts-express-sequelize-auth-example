@@ -521,7 +521,34 @@ import { dbConfig } from './config/database';
 })();
 ```
 
-# 9. Refactoring to use Decorators with Sequelize
+# 9. Creating Utilities for Tests
+
+src/utils/tests-utils.ts:
+
+```ts
+import '../config'; // load evn variables
+import { Database } from '../database';
+import { dbConfig } from '../config/database';
+import { environment } from '../config/environment';
+
+let db: Database;
+
+export async function startDb(): Promise<Database> {
+  db = new Database('test', dbConfig);
+  await db.connect();
+  return db;
+}
+
+export async function stopDb(): Promise<void> {
+  await db.disconnect();
+}
+
+export async function syncDb(): Promise<void> {
+  await db.sync();
+}
+```
+
+# 11. Refactoring to use Decorators with Sequelize
 
 - In order to use decorators:
   - check `tsconfig.json` for `"experimentalDecorators": true` and `"emitDecoratorMetadata": true`
