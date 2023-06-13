@@ -1,6 +1,7 @@
 import { Sequelize } from 'sequelize-typescript';
 
 import { dbType } from '../config/database';
+import { registerModels } from '../models';
 
 export class Database {
   isTestEnvironment: boolean;
@@ -32,6 +33,7 @@ export class Database {
     }
 
     // register the models
+    registerModels(this.connection);
 
     // sync the models
     await this.sync();

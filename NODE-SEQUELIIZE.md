@@ -29,7 +29,9 @@
 - Postman / REST client (vs code extension)
 - DBeaver
 
-# 2. Development Setup
+# 2. Getting Started
+
+## 2.1 Setting Up Development Environment
 
 1. git (`git init`), nvm (.nvmrc file with node version, so we can `nvm use` (optional)), `npm init -y`
 2. `.prettierc` for prettier config
@@ -83,7 +85,7 @@ module.exports = {
 
 `test": "jest --runInBand",` - can be useful for debugging
 
-# 3. Installing Dependencies:
+## 2.2 Installing Dependencies:
 
 `npm i express dotenv morgan bcrypt jsonwebtoken sequelize sequelize-typescript pg pg-hstore cls-hooked`
 
@@ -100,7 +102,7 @@ tsconfig:
 }
 ```
 
-# 4. Using `docker-compose` to Create Databases
+# 3. Using `docker-compose` to Create Databases
 
 - one for development
 - one for testing
@@ -130,11 +132,11 @@ services:
     image: postgres:13
     container_name: node-ts-sequelize-auth-example-test-db
     env_file:
-      - .env.test
+      - .env
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${DB_TEST_PASSWORD:-postgres}
     ports:
-      - ${DB_PORT:-5433}:5432
+      - ${DB_TEST_PORT:-5433}:5432
 ```
 
 - `docker-compose up -d`
@@ -143,7 +145,7 @@ services:
 
 Or we can connect to our DBs using DBeaver.
 
-# 5. Understanding JWT
+# 4. Understanding JWT
 
 - JSON Web Tokens (JWTs) are an **open standard (RFC 7519) for securely transmitting information between parties as a JSON object**.
 - They are **commonly used for authentication and authorization** purposes in web applications and APIs.
@@ -172,7 +174,7 @@ Or we can connect to our DBs using DBeaver.
 
 - It's worth noting that JWTs are not inherently secure. Mishandling or insecure implementation can lead to security vulnerabilities, such as token leakage, token tampering, or replay attacks. Therefore, it's crucial to understand and follow best practices to ensure the security of your JWT-based authentication system.
 
-# 6. Understanding Bcrypt
+# 5. Understanding Bcrypt
 
 **Hashing**:
 
@@ -192,7 +194,7 @@ Or we can connect to our DBs using DBeaver.
 - It incorporates both hashing and salting techniques, making it a secure choice for password storage.
 - bcrypt uses a variant of the Blowfish encryption algorithm and introduces a work factor or cost factor, which determines the computational complexity of the hashing process. Increasing the work factor makes the hashing process slower, which helps protect against brute-force attacks. bcrypt automatically handles the generation and management of salts, making it convenient for developers to use without worrying about the details of salt generation and storage.
 
-# 7. Adding Environment Variables
+# 6. Adding Environment Variables
 
 1. modify scripts - something like `"local": "NODE_ENV=development ts-node src",`
 2. src/config/environment.ts:
@@ -233,7 +235,9 @@ export const test = {
 };
 ```
 
-# 8. Creating JWT Utils with Tests
+# 7. Utils
+
+## 7.1 jwt-utils
 
 src/utils/jwt-utils.ts:
 
@@ -321,7 +325,7 @@ describe('Testing JWT utilities', () => {
 });
 ```
 
-# 9. Creating Password Utils
+## 7.2 password-utils
 
 src/utils/password-utils.ts:
 
@@ -342,7 +346,9 @@ export async function comparePasswords(
 }
 ```
 
-# 10. Abstracting Database Connection
+# 8. Abstracting Database Connection
+
+## 8.1 Creating Database class
 
 - This is our database connection abstraction.
 
@@ -402,5 +408,82 @@ export class Database {
   async disconnect() {
     await this.connection?.close();
   }
+}
+```
+
+## 8.2 Registering Models
+
+1. create models
+
+src/models/index.ts:
+
+```ts
+import fs from 'fs';
+import path from 'path';
+
+import { Sequelize } from 'sequelize-typescript';
+
+let models: { [key: string]: any } = {
+  //   User: User,
+  //   RefreshToken: RefreshToken,
+  //   Role: Role,
+  //   sequelize: sequelize,
+};
+
+function registerModels(sequelize: Sequelize) {
+  const thisFile = path.basename(__filename); // index.ts
+  const modelFiles = fs.readdirSync(__dirname);
+  const filterModelFiles = modelFiles.filter(
+    (file) => (file !== thisFile && file.slice(-3) === '.js') || '.ts'
+  );
+
+  for (const file of filterModelFiles) {
+    const model = require(path.join(__dirname, file)).default(sequelize);
+    models[model.name as string] = model;
+  }
+
+  // Register associations of the models
+
+  models.sequelize = sequelize;
+}
+
+export { registerModels, models };
+```
+
+and now call this function in our database connection abstraction (`Database`):
+
+src/database.index.ts:
+
+```ts
+import { registerModels } from '../models';
+
+export class Database {
+  // ...fields
+
+  // ...constructor
+
+  // ...getConnectionString
+
+  async connect() {
+    const uri = this.getConnectionString();
+
+    this.connection = new Sequelize(uri, {
+      logging: this.isTestEnvironment ? false : console.log,
+    });
+
+    await this.connection.authenticate({ logging: false });
+
+    if (!this.isTestEnvironment) {
+      console.log('Connection has been established successfully');
+    }
+
+    // REGISTERING MODELS!
+    registerModels(this.connection);
+
+    // sync the models
+    await this.sync();
+  }
+
+  // other methods
 }
 ```
