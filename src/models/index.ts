@@ -10,21 +10,25 @@ let models: { [key: string]: any } = {
   //   sequelize: sequelize,
 };
 
-function registerModels(sequelize: Sequelize) {
+function registerModels(sequelize: Sequelize): void {
   const thisFile = path.basename(__filename); // index.ts
-  const modelFiles = fs.readdirSync(__dirname);
-  const filterModelFiles = modelFiles.filter(
-    (file) => (file !== thisFile && file.slice(-3) === '.js') || '.ts'
-  );
 
-  for (const file of filterModelFiles) {
-    const model = require(path.join(__dirname, file)).default(sequelize);
-    models[model.name as string] = model;
-  }
+  // Read model files from the models directory
+  fs.readdirSync(__dirname)
+    .filter((file) => file !== thisFile && (file.slice(-3) === '.js' || '.ts')) // Filter TypeScript files
+    .forEach((file) => {
+      const modelPath = path.join(__dirname, file);
+      const model = require(modelPath).default;
 
-  // Register associations of the models
+      if (model && model !== sequelize.models[model.name]) {
+        sequelize.addModels([model]);
+      }
+    });
 
-  models.sequelize = sequelize;
+  // Define associations between models if needed
+  // Example:
+  // const { User, Role } = sequelize.models;
+  // User.belongsTo(Role);
 }
 
 export { registerModels, models };

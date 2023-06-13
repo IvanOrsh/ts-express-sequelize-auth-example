@@ -25,6 +25,6 @@ const test: DBConfigType = {
   dialect: 'postgres',
 };
 
-export type dbType = typeof db;
+export type dbType = typeof dbConfig;
 
-export const db = { development, test };
+export const dbConfig = { development, test };

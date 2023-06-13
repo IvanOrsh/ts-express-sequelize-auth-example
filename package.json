@@ -6,8 +6,8 @@
   "scripts": {
     "clean": "rimraf ./build",
     "build": "npm-run-all lint format test clean && tsc",
-    "start": "node src",
-    "local": "NODE_ENV=development ts-node src",
+    "start": "node src/server.js",
+    "local": "NODE_ENV=development ts-node src/server.ts",
     "local:watch": "NODE_ENV=development nodemon src -e ts,json --exec 'npm run local'",
     "lint": "eslint src",
     "format": "npx prettier --write src",

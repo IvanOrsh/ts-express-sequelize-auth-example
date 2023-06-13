@@ -430,21 +430,25 @@ let models: { [key: string]: any } = {
   //   sequelize: sequelize,
 };
 
-function registerModels(sequelize: Sequelize) {
+function registerModels(sequelize: Sequelize): void {
   const thisFile = path.basename(__filename); // index.ts
-  const modelFiles = fs.readdirSync(__dirname);
-  const filterModelFiles = modelFiles.filter(
-    (file) => (file !== thisFile && file.slice(-3) === '.js') || '.ts'
-  );
 
-  for (const file of filterModelFiles) {
-    const model = require(path.join(__dirname, file)).default(sequelize);
-    models[model.name as string] = model;
-  }
+  // Read model files from the models directory
+  fs.readdirSync(__dirname)
+    .filter((file) => file !== thisFile && (file.slice(-3) === '.js' || '.ts')) // Filter TypeScript files
+    .forEach((file) => {
+      const modelPath = path.join(__dirname, file);
+      const model = require(modelPath).default;
 
-  // Register associations of the models
+      if (model && model !== sequelize.models[model.name]) {
+        sequelize.addModels([model]);
+      }
+    });
 
-  models.sequelize = sequelize;
+  // Define associations between models if needed
+  // Example:
+  // const { User, Role } = sequelize.models;
+  // User.belongsTo(Role);
 }
 
 export { registerModels, models };
@@ -486,4 +490,123 @@ export class Database {
 
   // other methods
 }
+```
+
+# 8. Creating the Server
+
+1. src/config/index.ts - load our environment variables using `dotenv.config`:
+
+```ts
+import { config } from 'dotenv';
+
+config();
+```
+
+2. src/server.ts:
+
+```ts
+import './config'; // load our environment variables
+import { Database } from './database';
+import { environment } from './config/environment';
+import { dbConfig } from './config/database';
+
+(async () => {
+  try {
+    // connect to db
+    const db = new Database(environment.nodeEnv, dbConfig);
+    await db.connect();
+  } catch (error) {
+    console.error('Something went wrong while initializing the app.', error);
+  }
+})();
+```
+
+# 9. Refactoring to use Decorators with Sequelize
+
+- In order to use decorators:
+  - check `tsconfig.json` for `"experimentalDecorators": true` and `"emitDecoratorMetadata": true`
+  - make sure you install: `sequelize sequelize-typescript reflect-metadata`
+- Define your models using decorators. For example, let's say you have a User model:
+
+```ts
+import { Table, Column, Model, DataType } from 'sequelize-typescript';
+
+@Table
+export class User extends Model<User> {
+  @Column(DataType.STRING)
+  name!: string;
+
+  @Column(DataType.STRING)
+  email!: string;
+
+  // ... other columns and associations
+}
+```
+
+- Create a separate file, let's say `sequelize.ts`, where you initialize Sequelize and define the models:
+
+```ts
+import { Sequelize } from 'sequelize-typescript';
+import { User } from './models/User';
+
+const sequelize = new Sequelize('database', 'username', 'password', {
+  dialect: 'mysql', // replace with your database dialect
+  logging: false,
+});
+
+export const models = [User]; // Array of all your models
+
+export default sequelize;
+```
+
+- Now we can refactor our `Database` class and update it to use decorators:
+
+```ts
+import { Sequelize } from 'sequelize-typescript';
+import { models } from './sequelize';
+
+export class Database {
+  private readonly sequelize: Sequelize;
+
+  constructor(private readonly environment: string) {
+    this.sequelize = new Sequelize('database', 'username', 'password', {
+      dialect: 'mysql', // replace with your database dialect
+      logging: false,
+    });
+
+    // Register models
+    this.sequelize.addModels(models);
+  }
+
+  async connect() {
+    try {
+      await this.sequelize.authenticate();
+      console.log('Connection has been established successfully');
+      await this.sequelize.sync({ force: false });
+      console.log('Models synchronized successfully');
+    } catch (error) {
+      console.error('Unable to connect to the database:', error);
+    }
+  }
+
+  async disconnect() {
+    try {
+      await this.sequelize.close();
+      console.log('Connection closed successfully');
+    } catch (error) {
+      console.error('Failed to close the connection:', error);
+    }
+  }
+}
+```
+
+- In this updated version, the `Database` class initializes Sequelize within its constructor and registers the models using the addModels method of Sequelize. The connect method authenticates the connection and synchronizes the models, while the disconnect method closes the connection.
+
+- Now we can create an instance of the Database class and use it to connect to and disconnect from the database:
+
+```ts
+const database = new Database('development');
+await database.connect();
+// Use the Sequelize models and perform database operations
+await database.disconnect();
 ```
