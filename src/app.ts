@@ -19,10 +19,12 @@ class App {
     this.setRoutes();
   }
 
-  setRoutes() {}
+  setRoutes() {
+    this.app.use(errorMiddleware);
+  }
 
   getApp() {
-    return this.app.use(errorMiddleware);
+    return this.app;
   }
 
   listen() {
