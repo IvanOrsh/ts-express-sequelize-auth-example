@@ -6,7 +6,7 @@ type AsyncHandler = (
   next: NextFunction
 ) => Promise<any>;
 
-function runAsyncWrapper(
+export function runAsyncWrapper(
   callback: AsyncHandler
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction) => {
