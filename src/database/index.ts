@@ -15,7 +15,7 @@ export class Database {
     const { username, password, host, port, database } =
       this.db[this.environment as keyof dbType];
 
-    return `postgres://${username}:${password}@${host}:${port}/${database}`;
+    return `postgres://${username}:${password}@${host}:${port}/${database};`;
   }
 
   async connect() {
@@ -29,7 +29,7 @@ export class Database {
     await this.connection.authenticate({ logging: false });
 
     if (!this.isTestEnvironment) {
-      console.log('Connection has been established successfully');
+      console.log('Successfully connected to the database');
     }
 
     // register the models
