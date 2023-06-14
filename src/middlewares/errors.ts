@@ -11,6 +11,7 @@ export function errorMiddleware(
 
   // Send the error response
   res.json({
+    success: false,
     error: {
       message: err.message,
       stack:
