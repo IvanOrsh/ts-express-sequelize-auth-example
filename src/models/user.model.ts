@@ -7,9 +7,14 @@ import {
   BeforeSave,
   Index,
   BeforeCreate,
+  HasMany,
+  Scopes,
+  BelongsToMany,
 } from 'sequelize-typescript';
 
 import { environment } from '../config/environment';
+import Role from './role.model';
+import UserRole from './userRole.model';
 
 @Table({ modelName: 'User' })
 class User extends Model<User> {
@@ -65,6 +70,9 @@ class User extends Model<User> {
   })
   lastName!: string;
 
+  @BelongsToMany(() => Role, () => UserRole)
+  roles!: Role[];
+
   @BeforeSave
   @BeforeCreate
   static async hashPassword(instance: User): Promise<void> {
@@ -80,6 +88,15 @@ class User extends Model<User> {
     hashedPassword: string
   ): Promise<boolean> {
     return compare(password, hashedPassword);
+  }
+
+  static async createWithDefaultRole(userData: any): Promise<User> {
+    const user = await User.create(userData);
+    const defaultRole = await Role.findOne({ where: { role: 'Guest' } }); // Assuming 'Default' is the name of the default role
+    if (defaultRole) {
+      await user.$add('role', defaultRole); // Assign the default role to the user
+    }
+    return user;
   }
 }
 

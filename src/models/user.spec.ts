@@ -1,6 +1,8 @@
 import { Sequelize } from 'sequelize-typescript';
 
 import User from './user.model';
+import Role from './role.model';
+import UserRole from './userRole.model';
 
 describe('User Model', () => {
   let sequelize: Sequelize;
@@ -15,13 +17,21 @@ describe('User Model', () => {
       logging: false,
     });
 
-    sequelize.addModels([User]);
+    sequelize.addModels([Role, UserRole, User]);
 
     await sequelize.sync();
   });
 
+  beforeEach(async () => {
+    // populate db with roles
+    const rolesData = Role.getAllowedRoles().map((role) => ({
+      role,
+    }));
+    await Role.bulkCreate(rolesData as any);
+  });
+
   afterEach(async () => {
-    await sequelize.truncate({ cascade: true });
+    await Role.destroy({ where: {} });
   });
 
   afterAll(async () => {
@@ -94,7 +104,7 @@ describe('User Model', () => {
         lastName: 'Doe',
       };
 
-      await User.create(userData as any);
+      await User.createWithDefaultRole(userData as any);
 
       const users = await User.findAll();
 

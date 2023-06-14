@@ -548,99 +548,11 @@ export async function syncDb(): Promise<void> {
 }
 ```
 
-# 10. Creating the `User` class
+# 10 `User` model
 
-```ts
-import { hash, compare } from 'bcrypt';
-import {
-  Sequelize,
-  Table,
-  Model,
-  DataType,
-  Unique,
-} from 'sequelize-typescript';
+## 10.1 `user.model.ts`:
 
-import { environment } from '../config/environment';
-
-export default (sequelize: Sequelize) => {
-  class User extends Model {
-    static associate(models: Model[]) {}
-
-    static hashPassword(password: string): Promise<string> {
-      return hash(password, environment.saltRounds);
-    }
-
-    static comparePasswords(
-      password: string,
-      hashedPassword: string
-    ): Promise<boolean> {
-      return compare(password, hashedPassword);
-    }
-  }
-
-  User.init(
-    {
-      email: {
-        type: DataType.STRING(100),
-        allowNull: false,
-        unique: true,
-        validate: {
-          isEmail: {
-            msg: 'Not a valid email address',
-          },
-        },
-      },
-      password: {
-        type: DataType.STRING,
-        allowNull: false,
-      },
-      username: {
-        type: DataType.STRING(50),
-        unique: true,
-      },
-      firstName: {
-        type: DataType.STRING(50),
-        validate: {
-          len: {
-            args: [0, 50],
-            msg: 'First name has too many characters',
-          },
-        },
-      },
-      lastName: {
-        type: DataType.STRING(50),
-        validate: {
-          len: {
-            args: [0, 50],
-            msg: 'Last name has too many characters',
-          },
-        },
-      },
-    },
-    {
-      sequelize,
-      modelName: 'User',
-      indexes: [
-        {
-          unique: true,
-          fields: ['email'],
-        },
-      ],
-    }
-  );
-
-  User.beforeSave(async (user, options) => {
-    const hashedPassword = await User.hashPassword(user.password);
-    user.password = hashedPassword;
-  });
-
-  return User;
-};
-```
-
-# 11 User class with decorators:
-
-src/models/User.model.ts:
+src/models/user.model.ts:
 
 ```ts
 import { hash, compare } from 'bcrypt';
@@ -731,7 +643,7 @@ class User extends Model<User> {
 export default User;
 ```
 
-# 12 Testing User Model:
+## 10.2 `user.spec.ts`:
 
 - TODO: find better way to test models!
 
@@ -853,6 +765,145 @@ describe('User Model', () => {
       ).toBeTruthy();
     });
   });
+});
+```
+
+# 11 `Role` model
+
+## 11.1 `userRole.model.ts`:
+
+```ts
+import {
+  Table,
+  Model,
+  Column,
+  DataType,
+  ForeignKey,
+} from 'sequelize-typescript';
+import User from './user.model';
+import Role from './role.model';
+
+@Table({ modelName: 'UserRole' })
+class UserRole extends Model<UserRole> {
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  userId!: number;
+
+  @ForeignKey(() => Role)
+  @Column({
+    type: DataType.INTEGER,
+    allowNull: false,
+  })
+  roleId!: number;
+}
+
+export default UserRole;
+```
+
+## 11.2 `role.model.ts`:
+
+```ts
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  BelongsToMany,
+} from 'sequelize-typescript';
+
+import User from './user.model';
+import UserRole from './userRole.model';
+
+@Table({ modelName: 'Role' })
+class Role extends Model<Role> {
+  @Column({
+    type: DataType.STRING,
+  })
+  role!: string;
+
+  @BelongsToMany(() => User, () => UserRole)
+  user!: User;
+
+  static getAllowedRoles(): string[] {
+    return ['Admin', 'User', 'Guest'];
+  }
+}
+
+export default Role;
+```
+
+## 11.3 update `user.model.ts` and `user.spec.ts`
+
+src/models/user.model.ts:
+
+```ts
+@Table({ modelName: 'User' })
+class User extends Model<User> {
+  // ...rest of User
+
+  @BelongsToMany(() => Role, () => UserRole)
+  roles!: Role[];
+
+  // ...static methods
+
+  static async createWithDefaultRole(userData: any): Promise<User> {
+    const user = await User.create(userData);
+    const defaultRole = await Role.findOne({ where: { role: 'Guest' } }); // Assuming 'Default' is the name of the default role
+    if (defaultRole) {
+      await user.$add('role', defaultRole); // Assign the default role to the user
+    }
+    return user;
+  }
+}
+```
+
+- update user.spec.ts:
+
+```ts
+import { Sequelize } from 'sequelize-typescript';
+
+import User from './user.model';
+import Role from './role.model';
+import UserRole from './userRole.model';
+
+describe('User Model', () => {
+  let sequelize: Sequelize;
+
+  beforeAll(async () => {
+    sequelize = new Sequelize({
+      dialect: 'sqlite' as const,
+      database: 'some_db',
+      username: 'root',
+      password: '',
+      storage: ':memory:',
+      logging: false,
+    });
+
+    sequelize.addModels([Role, UserRole, User]);
+
+    await sequelize.sync();
+  });
+
+  beforeEach(async () => {
+    // populate db with roles
+    const rolesData = Role.getAllowedRoles().map((role) => ({
+      role,
+    }));
+    await Role.bulkCreate(rolesData as any);
+  });
+
+  afterEach(async () => {
+    await Role.destroy({ where: {} });
+  });
+
+  afterAll(async () => {
+    await sequelize.close();
+  });
+
+  // do the testing...
 });
 ```
 
