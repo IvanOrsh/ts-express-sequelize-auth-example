@@ -492,7 +492,7 @@ export class Database {
 }
 ```
 
-# 8. Creating the Server
+# 9. Creating the Server
 
 1. src/config/index.ts - load our environment variables using `dotenv.config`:
 
@@ -521,7 +521,7 @@ import { dbConfig } from './config/database';
 })();
 ```
 
-# 9. Creating Utilities for Tests
+# 10. Creating Utilities for Tests
 
 src/utils/tests-utils.ts:
 
@@ -548,7 +548,7 @@ export async function syncDb(): Promise<void> {
 }
 ```
 
-# 10 `User` model
+# 11. `User` model
 
 ## 10.1 `user.model.ts`:
 
@@ -768,7 +768,7 @@ describe('User Model', () => {
 });
 ```
 
-# 11 `Role` model
+# 12. `Role` model
 
 ## 11.1 `userRole.model.ts`:
 
@@ -907,7 +907,7 @@ describe('User Model', () => {
 });
 ```
 
-# 12 `RefreshToken` model
+# 13. `RefreshToken` model
 
 - one-to-one with `User` model
 
@@ -953,7 +953,49 @@ export default RefreshToken;
   refreshToken!: RefreshToken;
 ```
 
-# 14. Refactoring to use Decorators with Sequelize
+# 14. `App`
+
+src/app.ts:
+
+```ts
+import express from 'express';
+import logger from 'morgan';
+
+import { environment } from './config/environment';
+
+class App {
+  app: express.Express;
+  constructor() {
+    this.app = express();
+    this.app.use(
+      logger('dev', {
+        skip: (req: express.Request, res: express.Response) =>
+          environment.nodeEnv === 'test',
+      })
+    );
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
+    this.setRoutes();
+  }
+
+  setRoutes() {}
+
+  getApp() {
+    return this.app;
+  }
+
+  listen() {
+    const { port } = environment;
+    this.app.listen(port, () => {
+      console.log(`Listening on port: ${port}`);
+    });
+  }
+}
+
+export default App;
+```
+
+# 25. Refactoring to use Decorators with Sequelize
 
 - In order to use decorators:
   - check `tsconfig.json` for `"experimentalDecorators": true` and `"emitDecoratorMetadata": true`

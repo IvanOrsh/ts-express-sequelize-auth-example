@@ -2,6 +2,7 @@ import express from 'express';
 import logger from 'morgan';
 
 import { environment } from './config/environment';
+import { errorMiddleware } from './middlewares/errors';
 
 class App {
   app: express.Express;
@@ -21,7 +22,7 @@ class App {
   setRoutes() {}
 
   getApp() {
-    return this.app;
+    return this.app.use(errorMiddleware);
   }
 
   listen() {
