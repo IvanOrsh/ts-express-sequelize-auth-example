@@ -995,6 +995,53 @@ class App {
 export default App;
 ```
 
+# 15. Utility function `runAsyncWrapper` and Middleware `errorMiddleware`
+
+```ts
+import { Request, Response, NextFunction } from 'express';
+
+type AsyncHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<any>;
+
+function runAsyncWrapper(
+  callback: AsyncHandler
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction) => {
+    callback(req, res, next).catch(next);
+  };
+}
+```
+
+```ts
+import { NextFunction, Request, Response } from 'express';
+
+export function errorMiddleware(
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  console.error('[Error middleware]:\n', err.stack);
+  res.status(err.statusCode || 500);
+
+  // Send the error response
+  res.json({
+    error: {
+      message: err.message,
+      stack:
+        process.env.NODE_ENV === 'production'
+          ? 'Sorry, an error occurred.'
+          : err.stack, // Show the error stack only in development mode
+    },
+  });
+}
+```
+
+# 16.
+
 # 25. Refactoring to use Decorators with Sequelize
 
 - In order to use decorators:
