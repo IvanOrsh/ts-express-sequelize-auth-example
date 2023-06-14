@@ -7,14 +7,14 @@ import {
   BeforeSave,
   Index,
   BeforeCreate,
-  HasMany,
-  Scopes,
   BelongsToMany,
+  HasOne,
 } from 'sequelize-typescript';
 
 import { environment } from '../config/environment';
 import Role from './role.model';
 import UserRole from './userRole.model';
+import RefreshToken from './refreshToken.model';
 
 @Table({ modelName: 'User' })
 class User extends Model<User> {
@@ -72,6 +72,9 @@ class User extends Model<User> {
 
   @BelongsToMany(() => Role, () => UserRole)
   roles!: Role[];
+
+  @HasOne(() => RefreshToken)
+  refreshToken!: RefreshToken;
 
   @BeforeSave
   @BeforeCreate

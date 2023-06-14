@@ -907,7 +907,53 @@ describe('User Model', () => {
 });
 ```
 
-# 13. Refactoring to use Decorators with Sequelize
+# 12 `RefreshToken` model
+
+- one-to-one with `User` model
+
+src/models/refreshToken.model.ts:
+
+```ts
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  ForeignKey,
+  BelongsTo,
+} from 'sequelize-typescript';
+
+import User from './user.model';
+
+@Table({ modelName: 'RefreshToken' })
+class RefreshToken extends Model<RefreshToken> {
+  @Column({
+    type: DataType.TEXT,
+    allowNull: false,
+  })
+  token!: string;
+
+  @ForeignKey(() => User)
+  @Column({
+    type: DataType.INTEGER,
+  })
+  userId!: number;
+
+  @BelongsTo(() => User)
+  user!: User;
+}
+
+export default RefreshToken;
+```
+
+- update `user.model.ts` accordingly:
+
+```ts
+  @HasOne(() => RefreshToken)
+  refreshToken!: RefreshToken;
+```
+
+# 14. Refactoring to use Decorators with Sequelize
 
 - In order to use decorators:
   - check `tsconfig.json` for `"experimentalDecorators": true` and `"emitDecoratorMetadata": true`
