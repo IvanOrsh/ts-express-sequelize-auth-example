@@ -548,7 +548,315 @@ export async function syncDb(): Promise<void> {
 }
 ```
 
-# 11. Refactoring to use Decorators with Sequelize
+# 10. Creating the `User` class
+
+```ts
+import { hash, compare } from 'bcrypt';
+import {
+  Sequelize,
+  Table,
+  Model,
+  DataType,
+  Unique,
+} from 'sequelize-typescript';
+
+import { environment } from '../config/environment';
+
+export default (sequelize: Sequelize) => {
+  class User extends Model {
+    static associate(models: Model[]) {}
+
+    static hashPassword(password: string): Promise<string> {
+      return hash(password, environment.saltRounds);
+    }
+
+    static comparePasswords(
+      password: string,
+      hashedPassword: string
+    ): Promise<boolean> {
+      return compare(password, hashedPassword);
+    }
+  }
+
+  User.init(
+    {
+      email: {
+        type: DataType.STRING(100),
+        allowNull: false,
+        unique: true,
+        validate: {
+          isEmail: {
+            msg: 'Not a valid email address',
+          },
+        },
+      },
+      password: {
+        type: DataType.STRING,
+        allowNull: false,
+      },
+      username: {
+        type: DataType.STRING(50),
+        unique: true,
+      },
+      firstName: {
+        type: DataType.STRING(50),
+        validate: {
+          len: {
+            args: [0, 50],
+            msg: 'First name has too many characters',
+          },
+        },
+      },
+      lastName: {
+        type: DataType.STRING(50),
+        validate: {
+          len: {
+            args: [0, 50],
+            msg: 'Last name has too many characters',
+          },
+        },
+      },
+    },
+    {
+      sequelize,
+      modelName: 'User',
+      indexes: [
+        {
+          unique: true,
+          fields: ['email'],
+        },
+      ],
+    }
+  );
+
+  User.beforeSave(async (user, options) => {
+    const hashedPassword = await User.hashPassword(user.password);
+    user.password = hashedPassword;
+  });
+
+  return User;
+};
+```
+
+# 11 User class with decorators:
+
+src/models/User.model.ts:
+
+```ts
+import { hash, compare } from 'bcrypt';
+import {
+  Table,
+  Column,
+  Model,
+  DataType,
+  BeforeSave,
+  Index,
+  BeforeCreate,
+} from 'sequelize-typescript';
+
+import { environment } from '../config/environment';
+
+@Table({ modelName: 'User' })
+class User extends Model<User> {
+  @Index
+  @Column({
+    type: DataType.STRING(100),
+    allowNull: false,
+    unique: true,
+    field: 'email',
+    validate: {
+      isEmail: {
+        msg: 'Not a valid email address',
+      },
+    },
+  })
+  email!: string;
+
+  @Column({
+    type: DataType.STRING(50),
+    unique: true,
+    field: 'username',
+  })
+  username?: string;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: false,
+    field: 'password',
+  })
+  password!: string;
+
+  @Column({
+    type: DataType.STRING(50),
+    field: 'firstName',
+    validate: {
+      len: {
+        args: [0, 50],
+        msg: 'First name has too many characters',
+      },
+    },
+  })
+  firstName!: string;
+
+  @Column({
+    type: DataType.STRING(50),
+    field: 'lastName',
+    validate: {
+      len: {
+        args: [0, 50],
+        msg: 'Last name has too many characters',
+      },
+    },
+  })
+  lastName!: string;
+
+  @BeforeSave
+  @BeforeCreate
+  static async hashPassword(instance: User): Promise<void> {
+    const hashedPassword = await hash(
+      instance.dataValues.password,
+      environment.saltRounds
+    );
+    instance.dataValues.password = hashedPassword;
+  }
+
+  static async comparePasswords(
+    password: string,
+    hashedPassword: string
+  ): Promise<boolean> {
+    return compare(password, hashedPassword);
+  }
+}
+
+export default User;
+```
+
+# 12 Testing User Model:
+
+- TODO: find better way to test models!
+
+```ts
+import { Sequelize } from 'sequelize-typescript';
+
+import User from './user.model';
+
+describe('User Model', () => {
+  let sequelize: Sequelize;
+
+  beforeAll(async () => {
+    sequelize = new Sequelize({
+      dialect: 'sqlite' as const,
+      database: 'some_db',
+      username: 'root',
+      password: '',
+      storage: ':memory:',
+      logging: false,
+    });
+
+    sequelize.addModels([User]);
+
+    await sequelize.sync();
+  });
+
+  afterEach(async () => {
+    await sequelize.truncate({ cascade: true });
+  });
+
+  afterAll(async () => {
+    await sequelize.close();
+  });
+
+  describe('static methods', () => {
+    describe('hashPassword', () => {
+      test('should encrypt the password correctly', async () => {
+        const userData = {
+          email: 'test@example.com',
+          password: 'password123',
+          username: 'testuser',
+          firstName: 'John',
+          lastName: 'Doe',
+        };
+        const user = new User(userData as any);
+        await User.hashPassword(user);
+        expect(user.dataValues.password).toEqual(expect.any(String));
+        expect(user.dataValues.password).not.toEqual(userData.password);
+      });
+    });
+
+    describe('comparePasswords', () => {
+      test('should return true if the hashed password is the same as the original password ', async () => {
+        const userData = {
+          email: 'test@example.com',
+          password: 'password123',
+          username: 'testuser',
+          firstName: 'John',
+          lastName: 'Doe',
+        };
+        const user = new User(userData as any);
+        await User.hashPassword(user);
+        const result = await User.comparePasswords(
+          userData.password,
+          user.dataValues.password
+        );
+
+        expect(result).toBeTruthy();
+      });
+
+      test('should return false if the hashed password is not the same as the original password ', async () => {
+        const userData = {
+          email: 'test@example.com',
+          password: 'password123',
+          username: 'testuser',
+          firstName: 'John',
+          lastName: 'Doe',
+        };
+        const user = new User(userData as any);
+        await User.hashPassword(user);
+        const result = await User.comparePasswords(
+          'password1233',
+          user.dataValues.password
+        );
+
+        expect(result).toBeFalsy();
+      });
+    });
+  });
+
+  describe('hooks', () => {
+    test('should create a user with a hashed password', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        username: 'testuser',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      await User.create(userData as any);
+
+      const users = await User.findAll();
+
+      expect(users.length).toBe(1);
+
+      expect(users[0].getDataValue('email')).toEqual('test@example.com');
+      expect(users[0].getDataValue('password')).toEqual(expect.any(String));
+      expect(users[0].getDataValue('password')).not.toEqual(userData.password);
+      expect(users[0].getDataValue('username')).toEqual('testuser');
+      expect(users[0].getDataValue('firstName')).toEqual('John');
+      expect(users[0].getDataValue('lastName')).toEqual('Doe');
+
+      expect(
+        User.comparePasswords(
+          userData.password,
+          users[0].getDataValue('password')
+        )
+      ).toBeTruthy();
+    });
+  });
+});
+```
+
+# 13. Refactoring to use Decorators with Sequelize
 
 - In order to use decorators:
   - check `tsconfig.json` for `"experimentalDecorators": true` and `"emitDecoratorMetadata": true`
@@ -577,7 +885,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { User } from './models/User';
 
 const sequelize = new Sequelize('database', 'username', 'password', {
-  dialect: 'mysql', // replace with your database dialect
+  dialect: 'postgres', // replace with your database dialect
   logging: false,
 });
 
