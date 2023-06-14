@@ -15,6 +15,7 @@ import { environment } from '../config/environment';
 import Role from './role.model';
 import UserRole from './userRole.model';
 import RefreshToken from './refreshToken.model';
+import { generateRefreshToken } from '../utils/jwt-utils';
 
 @Table({ modelName: 'User' })
 class User extends Model<User> {
@@ -97,8 +98,15 @@ class User extends Model<User> {
     const user = await User.create(userData);
     const defaultRole = await Role.findOne({ where: { role: 'Guest' } }); // Assuming 'Default' is the name of the default role
     if (defaultRole) {
-      await user.$add('role', defaultRole); // Assign the default role to the user
+      await user.$add('role', defaultRole);
     }
+
+    // Generate refresh token
+    const refreshToken = generateRefreshToken({ userId: user.id });
+
+    // Create RefreshToken instance and associate it with the user
+    await RefreshToken.create({ token: refreshToken, userId: user.id } as any);
+
     return user;
   }
 }

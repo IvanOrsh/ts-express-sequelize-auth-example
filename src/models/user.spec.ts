@@ -3,6 +3,7 @@ import { Sequelize } from 'sequelize-typescript';
 import User from './user.model';
 import Role from './role.model';
 import UserRole from './userRole.model';
+import RefreshToken from './refreshToken.model';
 
 describe('User Model', () => {
   let sequelize: Sequelize;
@@ -17,7 +18,7 @@ describe('User Model', () => {
       logging: false,
     });
 
-    sequelize.addModels([Role, UserRole, User]);
+    sequelize.addModels([Role, UserRole, User, RefreshToken]);
 
     await sequelize.sync();
   });
@@ -28,10 +29,6 @@ describe('User Model', () => {
       role,
     }));
     await Role.bulkCreate(rolesData as any);
-  });
-
-  afterEach(async () => {
-    await Role.destroy({ where: {} });
   });
 
   afterAll(async () => {
@@ -95,17 +92,20 @@ describe('User Model', () => {
   });
 
   describe('hooks', () => {
+    const userData = {
+      email: 'test@example.com',
+      password: 'password123',
+      username: 'testuser',
+      firstName: 'John',
+      lastName: 'Doe',
+    };
+
+    afterEach(async () => {
+      await User.destroy({ where: {} });
+    });
+
     test('should create a user with a hashed password', async () => {
-      const userData = {
-        email: 'test@example.com',
-        password: 'password123',
-        username: 'testuser',
-        firstName: 'John',
-        lastName: 'Doe',
-      };
-
       await User.createWithDefaultRole(userData as any);
-
       const users = await User.findAll();
 
       expect(users.length).toBe(1);
@@ -123,6 +123,21 @@ describe('User Model', () => {
           users[0].getDataValue('password')
         )
       ).toBeTruthy();
+    });
+
+    test('should create a refresh token for the new user', async () => {
+      // Create the user with default role and refresh token
+      const user = await User.createWithDefaultRole(userData);
+
+      // Get the associated refresh token
+      const refreshToken = await RefreshToken.findOne({
+        where: { userId: user.id },
+      });
+
+      // Assertions
+      expect(refreshToken).toBeDefined();
+      expect(refreshToken?.getDataValue('token')).toBeTruthy();
+      expect(refreshToken?.getDataValue('userId')).toBe(user.id);
     });
   });
 });
