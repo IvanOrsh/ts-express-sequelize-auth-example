@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import request from 'supertest';
-import { startDb, syncDb, stopDb, getApp } from '../../../utils/tests-utils';
+import TestDb from '../../../utils/testDb';
 import { User, Role } from '../../../models';
 import {
   verifyAccessToken,
@@ -8,19 +8,19 @@ import {
 } from '../../../utils/jwt-utils';
 
 describe('register controller', () => {
-  let app: Express;
+  const testDb = new TestDb();
+  const app = testDb.getApp();
 
   beforeAll(async () => {
-    await startDb();
-    app = getApp();
+    await testDb.start();
   });
 
   afterAll(async () => {
-    await stopDb();
+    await testDb.stop();
   });
 
   beforeEach(async () => {
-    await syncDb(); // to force clean db before each test
+    await testDb.sync();
   });
 
   test('should register a new user successfully', async () => {

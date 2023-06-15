@@ -15,17 +15,26 @@ router.post(
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email } });
 
-    if (
-      !user ||
-      !(await User.comparePasswords(password, user.getDataValue('password')))
-    ) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
       });
     }
 
-    const payload = { email };
+    const isValidPassword = await User.comparePasswords(
+      password,
+      user.getDataValue('password')
+    );
+
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials',
+      });
+    }
+
+    const payload = { email, password };
     const accessToken = generateAccessToken(payload);
     const savedRefreshToken = await user.$get('refreshToken');
 
