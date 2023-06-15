@@ -13,7 +13,7 @@ import User from './user.model';
 class RefreshToken extends Model<RefreshToken> {
   @Column({
     type: DataType.TEXT,
-    allowNull: false,
+    allowNull: true,
   })
   declare token: string;
 
