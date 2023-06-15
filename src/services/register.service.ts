@@ -17,7 +17,6 @@ export class RegisterService {
       });
       const jwtPayload = {
         email: newUser.getDataValue('email'),
-        password: newUser.getDataValue('password'),
       };
       const accessToken = generateAccessToken(jwtPayload);
       const refreshToken = generateRefreshToken(jwtPayload);

@@ -18,7 +18,7 @@ export class LoginService {
       throw new Error('Invalid credentials');
     }
 
-    const payload = { email, password };
+    const payload = { email };
     const accessToken = generateAccessToken(payload);
     const savedRefreshToken = await user.$get('refreshToken');
 
