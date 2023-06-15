@@ -4,7 +4,6 @@ import {
   Column,
   Model,
   DataType,
-  BeforeSave,
   Index,
   BeforeCreate,
   BelongsToMany,
@@ -77,14 +76,13 @@ class User extends Model<User> {
   @HasOne(() => RefreshToken)
   declare refreshToken: RefreshToken;
 
-  @BeforeSave
   @BeforeCreate
   static async hashPassword(instance: User): Promise<void> {
     const hashedPassword = await hash(
-      instance.dataValues.password,
+      instance.getDataValue('password'),
       environment.saltRounds
     );
-    instance.dataValues.password = hashedPassword;
+    instance.setDataValue('password', hashedPassword);
   }
 
   static async comparePasswords(

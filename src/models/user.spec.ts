@@ -1,3 +1,5 @@
+import '../config';
+
 import { Sequelize } from 'sequelize-typescript';
 
 import User from './user.model';
@@ -104,7 +106,7 @@ describe('User Model', () => {
       await User.destroy({ where: {} });
     });
 
-    test('should create a user with a hashed password', async () => {
+    test('should create a user with a correctly hashed password', async () => {
       await User.createWithDefaultRole(userData as any);
       const users = await User.findAll();
 
@@ -112,6 +114,7 @@ describe('User Model', () => {
 
       expect(users[0].getDataValue('email')).toEqual('test@example.com');
       expect(users[0].getDataValue('password')).toEqual(expect.any(String));
+      expect(users[0].getDataValue('password')).not.toEqual(userData.password);
       expect(users[0].getDataValue('password')).not.toEqual(userData.password);
       expect(users[0].getDataValue('username')).toEqual('testuser');
       expect(users[0].getDataValue('firstName')).toEqual('John');
