@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize-typescript';
 
-function registerModels(sequelize: Sequelize): void {
+function registerModels(sequelize: Sequelize) {
   sequelize.addModels([__dirname + '/**/*.model.*']);
 }
 

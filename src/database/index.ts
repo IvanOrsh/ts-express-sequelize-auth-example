@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize-typescript';
+import cls from 'cls-hooked';
 
 import { dbType } from '../config/database';
 import { registerModels } from '../models';
@@ -19,6 +20,10 @@ export class Database {
   }
 
   async connect() {
+    // enable CLS
+    const namespace = cls.createNamespace('sequelize-transactions');
+    Sequelize.useCLS(namespace);
+
     const uri = this.getConnectionString();
 
     this.connection = new Sequelize(uri, {

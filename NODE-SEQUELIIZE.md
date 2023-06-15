@@ -21,13 +21,13 @@
   - Sequelize
   - Testing
   - Express.js
-  - Best practices!
+  - Best practices (not really)
 
 **Our Tools**:
 
 - Docker, Docker Compose
-- Postman / REST client (vs code extension)
-- DBeaver
+- Postman / REST client (vs code extension) (optional)
+- DBeaver (optional)
 
 # 2. Getting Started
 
@@ -1101,4 +1101,423 @@ export function requiresAuth(tokenType: TokenType) {
 
 # 17. Controllers
 
-## 17.1
+## 17.1 Register Controller:
+
+```ts
+import { Request, Response, Router } from 'express';
+import { User, Role, UserRole, RefreshToken } from '../../models';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from '../../utils/jwt-utils';
+import { runAsyncWrapper } from '../../utils/runAsyncWrapper';
+
+const router = Router();
+
+// sign up
+router.post(
+  '/register',
+  runAsyncWrapper(async (req: Request, res: Response) => {
+    const { email, password, roles } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+
+    if (user) {
+      return res.status(200).json({
+        success: false,
+        message: 'User already exists',
+      });
+    }
+
+    try {
+      const newUser = await User.create({ email, password } as any);
+      const jwtPayload = {
+        email: newUser.getDataValue('email'),
+        password: newUser.getDataValue('password'),
+      };
+      const accessToken = generateAccessToken(jwtPayload);
+      const refreshToken = generateRefreshToken(jwtPayload);
+      await RefreshToken.create({
+        token: refreshToken,
+        userId: newUser.id,
+      } as any);
+
+      if (roles && Array.isArray(roles)) {
+        const rolesToSave = [];
+
+        for (const role of roles) {
+          const newRole = await Role.create({ role } as any);
+          await newUser.$add('role', newRole);
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: 'User successfully registered',
+        data: {
+          accessToken,
+          refreshToken,
+        },
+      });
+    } catch (err) {
+      const error = err as Error;
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  })
+);
+
+export default router;
+```
+
+## 17.2 E2E Test for Register Controller:
+
+```ts
+import { Express } from 'express';
+import request from 'supertest';
+import { startDb, syncDb, stopDb, getApp } from '../../../utils/tests-utils';
+import { User, Role } from '../../../models';
+import {
+  verifyAccessToken,
+  verifyRefreshToken,
+} from '../../../utils/jwt-utils';
+
+describe('register', () => {
+  let app: Express;
+
+  beforeAll(async () => {
+    await startDb();
+    app = getApp();
+  });
+
+  afterAll(async () => {
+    await stopDb();
+  });
+
+  beforeEach(async () => {
+    await syncDb(); // to force clean db before each test
+  });
+
+  test('should register a new user successfully', async () => {
+    const userData = {
+      email: 'test@test.com',
+      password: 'test123',
+    };
+    await request(app).post('/v1/register').send(userData).expect(200);
+
+    const users = await User.findAll();
+
+    expect(users.length).toBe(1);
+    expect(users[0].getDataValue('email')).toEqual(userData.email);
+  });
+
+  test('should register a new user successfully with roles', async () => {
+    const userData = {
+      email: 'test@test.com',
+      password: 'test123',
+      roles: ['admin', 'customer'],
+    };
+    await request(app).post('/v1/register').send(userData).expect(200);
+
+    const users = await User.findAll({ include: Role });
+    // const user = users[0];
+
+    // const roles = await user.$get('roles');
+    // expect(roles!.map((role: Role) => role.getDataValue('role'))).toEqual(
+    //   userData.roles
+    // );
+
+    expect(users[0].roles.map((role) => role.getDataValue('role'))).toEqual(
+      userData.roles
+    );
+
+    expect(users.length).toBe(1);
+    expect(users[0].getDataValue('email')).toEqual(userData.email);
+  });
+
+  test('should not create a new user if it already exists', async () => {
+    const userData = {
+      email: 'test@test.com',
+      password: 'test123',
+      roles: ['admin', 'customer'],
+    };
+
+    await request(app).post('/v1/register').send(userData).expect(200);
+    const response = await request(app).post('/v1/register').send(userData);
+
+    expect(response.body).toEqual({
+      success: false,
+      message: 'User already exists',
+    });
+  });
+
+  test('should create a new user with a valid access / refresh token', async () => {
+    const userData = {
+      email: 'test@test.com',
+      password: 'test123',
+      roles: ['admin', 'customer'],
+    };
+
+    const response = await request(app).post('/v1/register').send(userData);
+
+    const {
+      data: { accessToken, refreshToken },
+    } = response.body;
+
+    expect(verifyAccessToken(accessToken)).toBeTruthy();
+    expect(verifyRefreshToken(refreshToken)).toBeTruthy();
+  });
+});
+```
+
+# 18. Adding Transactions
+
+## 18.1 `cls-hooked` or `async_hooks`?
+
+- It is possible to substitute `cls-hooked` with Node.js's core library `async_hooks` to achieve similar functionality.
+- While `cls-hooked` provides a higher-level abstraction and convenience for managing contexts, `async_hooks` offers a lower-level API for working directly with asynchronous hooks in Node.js.
+
+- `async_hooks` allows you to create hooks that are triggered at specific lifecycle events of asynchronous operations, such as when a new asynchronous resource is created or when an existing resource is destroyed.
+- By using `async_hooks`, you can track and associate contextual data with asynchronous operations throughout their lifecycle.
+
+Here's a simplified example of using `async_hooks` to track contextual data:
+
+```js
+const async_hooks = require('async_hooks');
+
+// Create a Map to store context data
+const contextMap = new Map();
+
+// Create a hook that tracks context data
+const asyncHook = async_hooks.createHook({
+  init(asyncId, type, triggerAsyncId, resource) {
+    const currentContext = contextMap.get(triggerAsyncId);
+    if (currentContext) {
+      // Associate the context data with the new async resource
+      contextMap.set(asyncId, currentContext);
+    }
+  },
+  destroy(asyncId) {
+    // Remove the context data when the async resource is destroyed
+    contextMap.delete(asyncId);
+  },
+});
+
+// Enable the async hook
+asyncHook.enable();
+
+// Run code within the context
+function runWithContext(contextData, callback) {
+  const asyncId = async_hooks.executionAsyncId();
+  contextMap.set(asyncId, contextData);
+
+  // Execute the callback within the context
+  callback();
+
+  contextMap.delete(asyncId);
+}
+
+// Example usage
+runWithContext({ key: 'value' }, () => {
+  // Access the context data within an asynchronous operation
+  setTimeout(() => {
+    const asyncId = async_hooks.executionAsyncId();
+    const contextData = contextMap.get(asyncId);
+    console.log(contextData); // Output: { key: 'value' }
+  }, 1000);
+});
+```
+
+- In the example above, `async_hooks` is used to create a hook that tracks context data. The `init` function is called when a new asynchronous resource is created, and it associates the context data with the new resource. The `destroy` function is called when an async resource is destroyed, and it removes the associated context data.
+
+- While `async_hooks` provides the foundation for managing contexts, it requires more manual bookkeeping and customization compared to `cls`-hooked, which offers a higher-level interface for working with contexts.
+
+## 18.2 Sequelize's Transactions and `async_hooks`
+
+- `async_hooks` can be used to manage Sequelize transactions by associating the transaction context with asynchronous operations.
+
+- This allows you to automatically propagate the transaction context across async boundaries without explicitly passing it around.
+
+```ts
+import async_hooks from 'async_hooks';
+import { Sequelize, Transaction } from 'sequelize';
+
+// Create a Sequelize instance
+const sequelize = new Sequelize('database', 'username', 'password', {
+  host: 'localhost',
+  dialect: 'mysql',
+});
+
+// Create a Map to store transaction contexts
+const transactionMap = new Map<number, Transaction>();
+
+// Create a hook that tracks transaction contexts
+const asyncHook = async_hooks.createHook({
+  init(asyncId, type, triggerAsyncId, resource) {
+    const currentTransaction = transactionMap.get(triggerAsyncId);
+    if (currentTransaction) {
+      // Associate the transaction context with the new async resource
+      transactionMap.set(asyncId, currentTransaction);
+    }
+  },
+  destroy(asyncId) {
+    // Remove the transaction context when the async resource is destroyed
+    transactionMap.delete(asyncId);
+  },
+});
+
+// Enable the async hook
+asyncHook.enable();
+
+// Run code within a transaction
+async function runInTransaction(
+  callback: (transaction: Transaction) => Promise<void>
+): Promise<void> {
+  const asyncId = async_hooks.executionAsyncId();
+
+  // Start a Sequelize transaction
+  const transaction = await sequelize.transaction();
+
+  // Associate the transaction with the current async resource
+  transactionMap.set(asyncId, transaction);
+
+  try {
+    // Execute the callback within the transaction
+    await callback(transaction);
+
+    // Commit the transaction
+    await transaction.commit();
+  } catch (error) {
+    // Rollback the transaction in case of an error
+    await transaction.rollback();
+    throw error;
+  } finally {
+    // Remove the transaction context
+    transactionMap.delete(asyncId);
+  }
+}
+
+// Example usage
+runInTransaction(async (transaction) => {
+  // Access the transaction within asynchronous operations
+  await sequelize.models.User.create({ name: 'John Doe' }, { transaction });
+
+  setTimeout(async () => {
+    const asyncId = async_hooks.executionAsyncId();
+    const transaction = transactionMap.get(asyncId);
+    const users = await sequelize.models.User.findAll({ transaction });
+    console.log(users);
+  }, 1000);
+});
+```
+
+## 18.3 Adding Transactions:
+
+- enable CLS in `Database` class
+
+```ts
+import { Sequelize } from 'sequelize-typescript';
+import cls from 'cls-hooked';
+
+import { dbType } from '../config/database';
+import { registerModels } from '../models';
+
+export class Database {
+  // ... rest of the class
+
+  async connect() {
+    // enable CLS
+    const namespace = cls.createNamespace('sequelize-transactions');
+    Sequelize.useCLS(namespace);
+
+    // ...
+  }
+  // other methods
+}
+```
+
+- now, in `register` controller:
+
+```ts
+import { Request, Response, Router } from 'express';
+import { User, Role, UserRole, RefreshToken } from '../../models';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+} from '../../utils/jwt-utils';
+import { runAsyncWrapper } from '../../utils/runAsyncWrapper';
+
+const router = Router();
+
+// sign up
+router.post(
+  '/register',
+  runAsyncWrapper(async (req: Request, res: Response) => {
+    const { email, password, roles } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+
+    if (user) {
+      return res.status(200).json({
+        success: false,
+        message: 'User already exists',
+      });
+    }
+
+    const transaction = await User.sequelize!.transaction();
+
+    try {
+      const newUser = await User.create({ email, password } as any, {
+        transaction,
+      });
+      const jwtPayload = {
+        email: newUser.getDataValue('email'),
+        password: newUser.getDataValue('password'),
+      };
+      const accessToken = generateAccessToken(jwtPayload);
+      const refreshToken = generateRefreshToken(jwtPayload);
+      await RefreshToken.create(
+        {
+          token: refreshToken,
+          userId: newUser.id,
+        } as any,
+        { transaction }
+      );
+
+      if (roles && Array.isArray(roles)) {
+        const rolesToSave = [];
+
+        for (const role of roles) {
+          const newRole = await Role.create({ role } as any, { transaction });
+          await newUser.$add('role', newRole, { transaction });
+        }
+      }
+      await transaction.commit();
+
+      return res.json({
+        success: true,
+        message: 'User successfully registered',
+        data: {
+          accessToken,
+          refreshToken,
+        },
+      });
+    } catch (err) {
+      const error = err as Error;
+      await transaction.rollback();
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  })
+);
+
+export default router;
+```
+
+- check if tests are still passing
+
+# 19.
