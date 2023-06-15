@@ -15,16 +15,16 @@ class RefreshToken extends Model<RefreshToken> {
     type: DataType.TEXT,
     allowNull: false,
   })
-  token!: string;
+  declare token: string;
 
   @ForeignKey(() => User)
   @Column({
     type: DataType.INTEGER,
   })
-  userId!: number;
+  declare userId: number;
 
   @BelongsTo(() => User)
-  user!: User;
+  declare user: User;
 }
 
 export default RefreshToken;

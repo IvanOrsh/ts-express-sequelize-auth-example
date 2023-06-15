@@ -31,21 +31,21 @@ class User extends Model<User> {
       },
     },
   })
-  email!: string;
+  declare email: string;
 
   @Column({
     type: DataType.STRING(50),
     unique: true,
     field: 'username',
   })
-  username?: string;
+  declare username?: string;
 
   @Column({
     type: DataType.STRING,
     allowNull: false,
     field: 'password',
   })
-  password!: string;
+  declare password: string;
 
   @Column({
     type: DataType.STRING(50),
@@ -57,7 +57,7 @@ class User extends Model<User> {
       },
     },
   })
-  firstName!: string;
+  declare firstName?: string;
 
   @Column({
     type: DataType.STRING(50),
@@ -69,13 +69,13 @@ class User extends Model<User> {
       },
     },
   })
-  lastName!: string;
+  declare lastName?: string;
 
   @BelongsToMany(() => Role, () => UserRole)
-  roles!: Role[];
+  declare roles: Role[];
 
   @HasOne(() => RefreshToken)
-  refreshToken!: RefreshToken;
+  declare refreshToken: RefreshToken;
 
   @BeforeSave
   @BeforeCreate

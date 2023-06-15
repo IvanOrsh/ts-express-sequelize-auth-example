@@ -15,14 +15,14 @@ class UserRole extends Model<UserRole> {
     type: DataType.INTEGER,
     allowNull: false,
   })
-  userId!: number;
+  declare userId: number;
 
   @ForeignKey(() => Role)
   @Column({
     type: DataType.INTEGER,
     allowNull: false,
   })
-  roleId!: number;
+  declare roleId: number;
 }
 
 export default UserRole;

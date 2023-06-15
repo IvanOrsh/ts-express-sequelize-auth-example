@@ -14,10 +14,10 @@ class Role extends Model<Role> {
   @Column({
     type: DataType.STRING,
   })
-  role!: string;
+  declare role: string;
 
   @BelongsToMany(() => User, () => UserRole)
-  user!: User;
+  declare user: User;
 
   static getAllowedRoles(): string[] {
     return ['Admin', 'User', 'Guest'];

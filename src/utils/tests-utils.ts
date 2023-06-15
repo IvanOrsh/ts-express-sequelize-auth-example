@@ -20,6 +20,6 @@ export async function syncDb(): Promise<void> {
   await db.sync();
 }
 
-export async function getApp() {
+export function getApp() {
   return new App().getApp();
 }
