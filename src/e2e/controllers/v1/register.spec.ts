@@ -1,4 +1,3 @@
-import { Express } from 'express';
 import request from 'supertest';
 import TestDb from '../../../utils/testDb';
 import { User, Role } from '../../../models';
@@ -45,12 +44,6 @@ describe('register controller', () => {
     await request(app).post('/v1/register').send(userData).expect(200);
 
     const users = await User.findAll({ include: Role });
-    // const user = users[0];
-
-    // const roles = await user.$get('roles');
-    // expect(roles!.map((role: Role) => role.getDataValue('role'))).toEqual(
-    //   userData.roles
-    // );
 
     expect(users[0].roles.map((role) => role.getDataValue('role'))).toEqual(
       userData.roles

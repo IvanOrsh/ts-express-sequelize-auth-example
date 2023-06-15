@@ -4,7 +4,7 @@ import { verifyAccessToken, verifyRefreshToken } from '../utils/jwt-utils';
 
 type TokenType = 'refreshToken' | 'accessToken';
 
-export function requiresAuth(tokenType: TokenType) {
+export function requiresAuth(tokenType: TokenType = 'accessToken') {
   return function (req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
 
