@@ -34,11 +34,10 @@ export function requiresAuth(tokenType: TokenType = 'accessToken') {
       let jwt;
       switch (tokenType) {
         case 'accessToken':
-          jwt = verifyRefreshToken(token);
+          jwt = verifyAccessToken(token);
           break;
         case 'refreshToken':
-        default:
-          jwt = verifyAccessToken(token);
+          jwt = verifyRefreshToken(token);
           break;
       }
 
