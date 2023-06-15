@@ -1,8 +1,11 @@
 import { Express } from 'express';
 import request from 'supertest';
 import { startDb, syncDb, stopDb, getApp } from '../../../utils/tests-utils';
-import { User, UserRole, Role, RefreshToken } from '../../../models';
-import App from '../../../app';
+import { User, Role } from '../../../models';
+import {
+  verifyAccessToken,
+  verifyRefreshToken,
+} from '../../../utils/jwt-utils';
 
 describe('register', () => {
   let app: Express;
@@ -71,5 +74,22 @@ describe('register', () => {
       success: false,
       message: 'User already exists',
     });
+  });
+
+  test('should create a new user with a valid access / refresh token', async () => {
+    const userData = {
+      email: 'test@test.com',
+      password: 'test123',
+      roles: ['admin', 'customer'],
+    };
+
+    const response = await request(app).post('/v1/register').send(userData);
+
+    const {
+      data: { accessToken, refreshToken },
+    } = response.body;
+
+    expect(verifyAccessToken(accessToken)).toBeTruthy();
+    expect(verifyRefreshToken(refreshToken)).toBeTruthy();
   });
 });
