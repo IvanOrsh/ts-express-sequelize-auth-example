@@ -15,7 +15,7 @@ class RefreshToken extends Model<RefreshToken> {
     type: DataType.TEXT,
     allowNull: true,
   })
-  declare token: string;
+  declare token?: string;
 
   @ForeignKey(() => User)
   @Column({
