@@ -15,7 +15,7 @@ export class Database {
     const { username, password, host, port, database } =
       this.db[this.environment as keyof dbType];
 
-    return `postgres://${username}:${password}@${host}:${port}/${database};`;
+    return `postgres://${username}:${password}@${host}:${port}/${database}`;
   }
 
   async connect() {

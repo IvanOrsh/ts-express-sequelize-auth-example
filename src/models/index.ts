@@ -1,7 +1,5 @@
-import { Sequelize } from 'sequelize-typescript';
-
-function registerModels(sequelize: Sequelize): void {
-  sequelize.addModels([__dirname + '/**/*.model.*']);
-}
-
-export { registerModels };
+export { default as User } from './user.model';
+export { default as Role } from './role.model';
+export { default as UserRole } from './userRole.model';
+export { default as RefreshToken } from './refreshToken.model';
+export { registerModels } from './registerModels';
