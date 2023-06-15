@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { RegisterService } from '../../services/regiserService';
+import { RegisterService } from '../../services/register.service';
 import { runAsyncWrapper } from '../../utils/runAsyncWrapper';
 
 const router = Router();

@@ -7,7 +7,7 @@ import {
   verifyRefreshToken,
 } from '../../../utils/jwt-utils';
 
-describe('register', () => {
+describe('register controller', () => {
   let app: Express;
 
   beforeAll(async () => {
