@@ -2,6 +2,7 @@ import '../config'; // load evn variables
 import { Database } from '../database';
 import { dbConfig } from '../config/database';
 import { environment } from '../config/environment';
+import App from '../app';
 
 let db: Database;
 
@@ -17,4 +18,8 @@ export async function stopDb(): Promise<void> {
 
 export async function syncDb(): Promise<void> {
   await db.sync();
+}
+
+export async function getApp() {
+  return new App().getApp();
 }
