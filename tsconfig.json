@@ -105,8 +105,8 @@
     "src",
     "package.json",
     "__tests__/e2e",
-    "__tests__/unit/login.service.spec.ts",
-    "__tests__/unit/jwt-utils.spec.ts",
+    "__tests__/unit/services/login.service.spec.ts",
+    "__tests__/unit/utils/jwt-utils.spec.ts",
     "__tests__/unit/user.model.spec.ts",
     "__tests__/test-helpers/testDb.ts"
   ]

@@ -1,7 +1,7 @@
-import { LoginService } from '../../src/services/login.service';
-import { User, RefreshToken } from '../../src/models';
+import { LoginService } from '../../../src/services/login.service';
+import { User, RefreshToken } from '../../../src/models';
 
-jest.mock('../../src/models', () => {
+jest.mock('../../../src/models', () => {
   type InputType = {
     where: {
       email: string;

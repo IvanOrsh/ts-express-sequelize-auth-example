@@ -5,7 +5,7 @@ import {
   generateRefreshToken,
   verifyAccessToken,
   verifyRefreshToken,
-} from '../../src/utils/jwt-utils';
+} from '../../../src/utils/jwt-utils';
 
 describe('Testing JWT utilities', () => {
   test('generateAccessToken should return an access token', () => {
