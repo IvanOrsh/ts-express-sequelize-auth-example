@@ -1,10 +1,8 @@
 import { Router, Request, Response } from 'express';
 
-import { LoginService } from '../../services/login.service';
+import { LogoutService } from '../../services/logout.service';
 import { runAsyncWrapper } from '../../utils/runAsyncWrapper';
 import { requiresAuth } from '../../middlewares/requiresAuth';
-
-import { User, RefreshToken } from '../../models';
 
 const router = Router();
 
@@ -13,15 +11,20 @@ router.post(
   requiresAuth('accessToken'),
   runAsyncWrapper(async (req: Request, res: Response) => {
     const { jwt } = req.body;
-    const user = await User.findOne({
-      where: { email: jwt.email },
-      include: RefreshToken,
-    });
-    user?.refreshToken.setDataValue('token', undefined);
-    return res.status(200).json({
-      success: true,
-      message: 'Successfully logged out',
-    });
+
+    try {
+      await LogoutService.logout(jwt);
+      return res.status(200).json({
+        success: true,
+        message: 'Successfully logged out',
+      });
+    } catch (err) {
+      const error = err as Error;
+      res.send(500).json({
+        success: false,
+        message: 'Internal error',
+      });
+    }
   })
 );
 
