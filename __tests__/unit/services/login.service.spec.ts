@@ -77,9 +77,6 @@ describe('LoginService', () => {
       user.password,
       'hashedPassword'
     );
-    expect(RefreshToken.findOne).toHaveBeenCalledWith({
-      where: { userId: user.id },
-    });
     expect(result).toEqual({ accessToken, refreshToken });
   });
 

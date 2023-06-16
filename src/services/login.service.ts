@@ -20,7 +20,9 @@ export class LoginService {
 
     const payload = { email };
     const accessToken = generateAccessToken(payload);
-    const savedRefreshToken = await user.$get('refreshToken');
+    const savedRefreshToken = await RefreshToken.findOne({
+      where: { userId: user.id },
+    });
 
     let refreshToken;
 
@@ -33,7 +35,8 @@ export class LoginService {
           userId: user.id,
         } as any);
       } else {
-        await user.$add('refreshToken', refreshToken);
+        savedRefreshToken.setDataValue('token', refreshToken);
+        await savedRefreshToken.save();
       }
     } else {
       refreshToken = savedRefreshToken.getDataValue('token');
