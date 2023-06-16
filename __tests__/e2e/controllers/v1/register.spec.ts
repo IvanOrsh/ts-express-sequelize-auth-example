@@ -1,10 +1,10 @@
 import request from 'supertest';
-import TestDb from '../../../utils/testDb';
-import { User, Role } from '../../../models';
+import TestDb from '../../../test-helpers/testDb';
+import { User, Role } from '../../../../src/models';
 import {
   verifyAccessToken,
   verifyRefreshToken,
-} from '../../../utils/jwt-utils';
+} from '../../../../src/utils/jwt-utils';
 
 describe('register controller', () => {
   const testDb = new TestDb();

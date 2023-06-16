@@ -12,9 +12,13 @@
     "lint": "eslint src",
     "format": "npx prettier --write src",
     "format:check": "npx prettier --check src",
+    "test:unit": "jest --selectProjects unit",
+    "test:unit:watch": "npm run test:unit -- --watch",
+    "test:e2e": "jest --runInBand --selectProjects e2e",
+    "test:e2e:watch": "npm run test:e2e -- --watch",
     "test": "jest --runInBand",
-    "test:watch": "npm test -- --watch",
-    "test:coverage": "jest --coverage"
+    "test:watch": "jest --runInBand --watch",
+    "test:coverage": "jest --runInBand --coverage"
   },
   "keywords": [],
   "author": "",

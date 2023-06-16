@@ -1,6 +1,6 @@
 import request from 'supertest';
-import TestDb from '../../../utils/testDb';
-import { RefreshToken } from '../../../models';
+import TestDb from '../../../test-helpers/testDb';
+import { RefreshToken } from '../../../../src/models';
 
 describe('login controller', () => {
   const testDb = new TestDb();

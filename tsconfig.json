@@ -101,5 +101,13 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
-  "include": ["src", "package.json"]
+  "include": [
+    "src",
+    "package.json",
+    "__tests__/e2e",
+    "__tests__/unit/login.service.spec.ts",
+    "__tests__/unit/jwt-utils.spec.ts",
+    "__tests__/unit/user.model.spec.ts",
+    "__tests__/test-helpers/testDb.ts"
+  ]
 }

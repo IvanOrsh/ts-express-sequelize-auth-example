@@ -1,8 +1,8 @@
 import request from 'supertest';
 
-import { Database } from '../database';
-import { dbConfig } from '../config/database';
-import App from '../app';
+import { Database } from '../../src/database';
+import { dbConfig } from '../../src/config/database';
+import App from '../../src/app';
 
 type Options = {
   email?: string;

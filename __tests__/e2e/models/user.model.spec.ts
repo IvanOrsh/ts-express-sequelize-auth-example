@@ -1,11 +1,11 @@
-import '../config';
+import '../../../src/config';
 
 import { Sequelize } from 'sequelize-typescript';
 
-import User from './user.model';
-import Role from './role.model';
-import UserRole from './userRole.model';
-import RefreshToken from './refreshToken.model';
+import User from '../../../src/models/user.model';
+import Role from '../../../src/models/role.model';
+import UserRole from '../../../src/models/userRole.model';
+import RefreshToken from '../../../src/models/refreshToken.model';
 
 describe('User Model', () => {
   let sequelize: Sequelize;
