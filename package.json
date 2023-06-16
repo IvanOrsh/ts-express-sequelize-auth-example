@@ -14,7 +14,7 @@
     "format:check": "npx prettier --check src",
     "test:unit": "jest --selectProjects unit",
     "test:unit:watch": "npm run test:unit -- --watch",
-    "test:e2e": "jest --runInBand --selectProjects e2e",
+    "test:e2e": "jest --runInBand --no-cache --selectProjects e2e",
     "test:e2e:watch": "npm run test:e2e -- --watch",
     "test": "jest --runInBand",
     "test:watch": "jest --runInBand --watch",
