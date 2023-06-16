@@ -20,9 +20,9 @@ router.post(
       });
     } catch (err) {
       const error = err as Error;
-      res.send(500).json({
+      return res.status(500).json({
         success: false,
-        message: 'Internal error',
+        message: error.message,
       });
     }
   })
