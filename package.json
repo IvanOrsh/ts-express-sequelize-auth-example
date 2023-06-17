@@ -19,7 +19,9 @@
     "test:e2e:watch": "npm run test:e2e -- --watch",
     "test": "jest --runInBand",
     "test:watch": "jest --runInBand --watch",
-    "test:coverage": "jest --runInBand --coverage"
+    "test:coverage": "jest --runInBand --coverage",
+    "db:migrations:up": "npx sequelize-cli db:migrate",
+    "db:migrations:down": "npx sequelize-cli db:migrate:undo:all"
   },
   "keywords": [],
   "author": "",
