@@ -20,8 +20,9 @@
     "test": "jest --runInBand",
     "test:watch": "jest --runInBand --watch",
     "test:coverage": "jest --runInBand --coverage",
+    "db:migrations:status": "npx sequelize-cli db:migrate:status",
     "db:migrations:up": "npx sequelize-cli db:migrate",
-    "db:migrations:down": "npx sequelize-cli db:migrate:undo:all"
+    "db:migrations:down": "npx sequelize-cli db:migrate:undo"
   },
   "keywords": [],
   "author": "",
